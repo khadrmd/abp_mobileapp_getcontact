@@ -5,6 +5,6 @@ import 'package:get_contact/register_page.dart';
 
 void main() {
   runApp(const MaterialApp(
-    home: HomePage(),
+    home: LoginPage(),
   ));
 }
