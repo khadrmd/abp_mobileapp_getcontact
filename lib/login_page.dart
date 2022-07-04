@@ -25,7 +25,7 @@ class _State extends State<LoginPage> {
               colors: [Color(0xff22824b), Color(0xff6bac4c), Colors.white]),
         ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
+          mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
@@ -98,9 +98,6 @@ class _State extends State<LoginPage> {
                       fontWeight: FontWeight.bold,
                       color: const Color(0xff22824b)),
                 )),
-            const SizedBox(
-              height: 250,
-            ),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
