@@ -39,6 +39,75 @@ class _State extends State<ContactDetail> {
     );
   }
 
+  showEditPanel(BuildContext context) {
+    Widget nameField = TextField(
+      style: GoogleFonts.aBeeZee(fontSize: 20),
+      decoration: const InputDecoration(
+          filled: true,
+          focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Color(0xff22824b))),
+          fillColor: Colors.white,
+          hintText: "Name",
+          border: OutlineInputBorder(
+            borderSide: BorderSide(color: Color(0xff22824b)),
+          )),
+    );
+
+    Widget phoneField = TextField(
+      keyboardType: TextInputType.phone,
+      style: GoogleFonts.aBeeZee(fontSize: 20),
+      decoration: const InputDecoration(
+          filled: true,
+          focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Color(0xff22824b))),
+          fillColor: Colors.white,
+          hintText: "Phone Number",
+          border: OutlineInputBorder(
+            borderSide: BorderSide(color: Color(0xff22824b)),
+          )),
+    );
+
+    Widget cancelButton = OutlinedButton(
+      child: Text("Cancel"),
+      onPressed: () {
+        Navigator.pop(context);
+      },
+    );
+    Widget saveButton = OutlinedButton(
+      child: Text("Save"),
+      onPressed: () {
+        Navigator.pop(context);
+      },
+    );
+
+    AlertDialog alert = AlertDialog(
+      title: Text("Edit Contact"),
+      content: Container(
+        height: 140,
+        width: 400,
+        child: Column(
+          children: [
+            nameField,
+            SizedBox(
+              height: 10,
+            ),
+            phoneField
+          ],
+        ),
+      ),
+      actions: [
+        cancelButton,
+        saveButton,
+      ],
+    );
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return alert;
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -108,7 +177,7 @@ class _State extends State<ContactDetail> {
                         width: 50,
                         alignment: Alignment.centerRight,
                         child: IconButton(
-                          onPressed: () => {},
+                          onPressed: () => {showEditPanel(context)},
                           icon: const Icon(Icons.edit),
                           color: Colors.green[300],
                         ),

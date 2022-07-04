@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:get_contact/login_page.dart';
+import 'package:new_gradient_app_bar/new_gradient_app_bar.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({Key? key}) : super(key: key);
@@ -12,6 +13,15 @@ class _State extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: NewGradientAppBar(
+        centerTitle: true,
+        title: Text(
+          'New Account',
+          style: GoogleFonts.righteous(fontSize: 27),
+        ),
+        gradient: const LinearGradient(
+            colors: [Color(0xff22824b), Color(0xff6bac4c)]),
+      ),
       body: Container(
         alignment: Alignment.center,
         width: MediaQuery.of(context).size.width,
