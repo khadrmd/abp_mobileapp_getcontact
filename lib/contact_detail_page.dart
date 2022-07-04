@@ -9,6 +9,36 @@ class ContactDetail extends StatefulWidget {
 }
 
 class _State extends State<ContactDetail> {
+  showAlertDialog(BuildContext context) {
+    Widget cancelButton = OutlinedButton(
+      child: Text("Cancel"),
+      onPressed: () {
+        Navigator.pop(context);
+      },
+    );
+    Widget continueButton = OutlinedButton(
+      child: Text("Confirm"),
+      onPressed: () {
+        Navigator.popUntil(context, (route) => route.isFirst);
+      },
+    );
+    AlertDialog alert = AlertDialog(
+      title: Text("Confirm Remove"),
+      content:
+          Text("Are you sure to delete this contact? this can't be undone!"),
+      actions: [
+        cancelButton,
+        continueButton,
+      ],
+    );
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return alert;
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -115,6 +145,15 @@ class _State extends State<ContactDetail> {
                         ),
                       ),
                     ],
+                  ),
+                ),
+                Container(
+                  padding: EdgeInsets.only(bottom: 15, right: 15),
+                  alignment: Alignment.bottomRight,
+                  child: FloatingActionButton(
+                    backgroundColor: Colors.red,
+                    onPressed: () => {showAlertDialog(context)},
+                    child: Icon(Icons.delete),
                   ),
                 ),
               ],
