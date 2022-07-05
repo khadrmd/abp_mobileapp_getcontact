@@ -1,5 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.get_contact">
+    <uses-permission android:name="android.permission.INTERNET" />
    <application
         android:label="get_contact"
         android:name="${applicationName}"
