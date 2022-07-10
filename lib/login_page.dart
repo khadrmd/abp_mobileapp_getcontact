@@ -98,7 +98,7 @@ class _State extends State<LoginPage> {
                 height: 10,
               ),
               SizedBox(
-                height: 40,
+                height: 90,
                 width: 300,
                 child: TextFormField(
                   controller: _phoneController,
@@ -126,7 +126,7 @@ class _State extends State<LoginPage> {
                 height: 10,
               ),
               SizedBox(
-                height: 40,
+                height: 90,
                 width: 300,
                 child: TextFormField(
                   controller: _passwordController,
