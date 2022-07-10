@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:get_contact/api/contact.dart';
 import 'package:get_contact/api/users.dart';
 import 'package:get_contact/api/utils/get_initials.dart';
 import 'package:get_contact/login_page.dart';
@@ -17,16 +19,79 @@ class HomePage extends StatefulWidget {
 }
 
 class _State extends State<HomePage> {
-  late Future<User> futureProfile;
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  late Future<User> futureProfile = [] as Future<User>;
+
+  String? _validateName(String? txt) {
+    if (txt == null || txt.isEmpty) {
+      return "Name is required";
+    }
+    return null;
+  }
+
+  String? _validatePhone(String? txt) {
+    if (txt == null || txt.isEmpty) {
+      return "Phone is required";
+    }
+    if (!RegExp(r"^(^08)(\d{3,4}-?){2}\d{3,4}$").hasMatch(txt)) {
+      return "Not a valid phone number";
+    }
+    return null;
+  }
 
   @override
   void initState() {
     super.initState();
-    futureProfile = UserService.getProfile();
+    fetchProfile();
+  }
+
+  fetchProfile() {
+    setState(() {
+      futureProfile = UserService.getProfile();
+    });
+  }
+
+  FutureOr onGoBack(dynamic value) {
+    fetchProfile();
+  }
+
+  void _handleSubmit() async {
+    if (_formKey.currentState!.validate()) {
+      try {
+        showDialog(
+          context: context,
+          builder: (context) => const Center(
+            child: SizedBox(
+              height: 100,
+              width: 100,
+              child: CircularProgressIndicator(),
+            ),
+          ),
+        );
+
+        await ContactService.addContact(
+            _nameController.text, _phoneController.text);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Added new contact')),
+        );
+
+        Navigator.pop(context);
+      } catch (err) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(err.toString())),
+        );
+      }
+    }
   }
 
   showAddPanel(BuildContext context) {
-    Widget nameField = TextField(
+    Widget nameField = TextFormField(
+      controller: _nameController,
+      validator: _validateName,
       style: GoogleFonts.aBeeZee(fontSize: 20),
       decoration: const InputDecoration(
         filled: true,
@@ -43,7 +108,9 @@ class _State extends State<HomePage> {
       ),
     );
 
-    Widget phoneField = TextField(
+    Widget phoneField = TextFormField(
+      controller: _phoneController,
+      validator: _validatePhone,
       keyboardType: TextInputType.phone,
       style: GoogleFonts.aBeeZee(fontSize: 20),
       decoration: const InputDecoration(
@@ -62,31 +129,37 @@ class _State extends State<HomePage> {
     );
 
     Widget cancelButton = OutlinedButton(
-      child: Text("Cancel"),
+      child: const Text("Cancel"),
       onPressed: () {
         Navigator.pop(context);
       },
     );
+
     Widget saveButton = OutlinedButton(
-      child: Text("Add"),
-      onPressed: () {
+      child: const Text("Add"),
+      onPressed: () async {
+        _handleSubmit();
+        await fetchProfile();
         Navigator.pop(context);
       },
     );
 
     AlertDialog alert = AlertDialog(
       title: Text("Add Contact"),
-      content: Container(
-        height: 140,
-        width: 400,
-        child: Column(
-          children: [
-            nameField,
-            const SizedBox(
-              height: 10,
-            ),
-            phoneField
-          ],
+      content: Form(
+        key: _formKey,
+        child: Container(
+          height: 140,
+          width: 400,
+          child: Column(
+            children: [
+              nameField,
+              const SizedBox(
+                height: 10,
+              ),
+              phoneField
+            ],
+          ),
         ),
       ),
       actions: [
@@ -113,135 +186,145 @@ class _State extends State<HomePage> {
           );
           Navigator.pop(context);
           Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const LoginPage(),
-              ),
-              (route) => false);
+            context,
+            MaterialPageRoute(builder: (context) => const LoginPage()),
+            (route) => false,
+          );
 
           break;
       }
     }
 
     return Scaffold(
-        appBar: NewGradientAppBar(
-          actions: <Widget>[
-            PopupMenuButton<String>(
-              onSelected: _handleClick,
-              itemBuilder: (BuildContext context) {
-                return {'Logout'}.map((String choice) {
-                  return PopupMenuItem<String>(
-                    value: choice,
-                    child: Text(choice),
-                  );
-                }).toList();
-              },
-            ),
-          ],
-          centerTitle: true,
-          title: Text(
-            'GET CONTACT',
-            style: GoogleFonts.righteous(fontSize: 27),
+      appBar: NewGradientAppBar(
+        actions: <Widget>[
+          PopupMenuButton<String>(
+            onSelected: _handleClick,
+            itemBuilder: (BuildContext context) {
+              return {'Logout'}.map((String choice) {
+                return PopupMenuItem<String>(
+                  value: choice,
+                  child: Text(choice),
+                );
+              }).toList();
+            },
           ),
-          gradient: const LinearGradient(
-              colors: [Color(0xff22824b), Color(0xff6bac4c)]),
+        ],
+        centerTitle: true,
+        title: Text(
+          'GET CONTACT',
+          style: GoogleFonts.righteous(fontSize: 27),
         ),
-        body: Center(
-          child: Align(
-            child: Column(
-              children: [
-                Container(
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [Color(0xff6bac4c), Color(0xff22824b)]),
-                    ),
-                    padding: const EdgeInsets.all(10),
-                    height: 110,
-                    child: FutureBuilder<User>(
-                      future: futureProfile,
-                      builder: (context, snapshot) {
-                        if (snapshot.hasData) {
-                          return Row(
-                            children: [
-                              Container(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.green[700],
-                                ),
-                                child: Icon(
-                                  Icons.person,
-                                  size: 80,
-                                  color: Colors.green[100],
-                                ),
+        gradient: const LinearGradient(
+            colors: [Color(0xff22824b), Color(0xff6bac4c)]),
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Color(0xff6bac4c),
+        onPressed: () => {showAddPanel(context)},
+        child: const Icon(
+          Icons.add_rounded,
+          size: 50,
+        ),
+      ),
+      body: Center(
+        child: Align(
+          child: Column(
+            children: [
+              Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xff6bac4c), Color(0xff22824b)]),
+                  ),
+                  padding: const EdgeInsets.all(10),
+                  height: 110,
+                  child: FutureBuilder<User>(
+                    future: futureProfile,
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData) {
+                        return Row(
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.green[700],
                               ),
-                              Container(
-                                  padding: const EdgeInsets.only(left: 10),
-                                  child: Expanded(
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceEvenly,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          snapshot.data!.name ?? "-",
-                                          overflow: TextOverflow.ellipsis,
-                                          style: GoogleFonts.aBeeZee(
-                                            fontSize: 23,
-                                            color: Colors.white,
-                                          ),
+                              child: Icon(
+                                Icons.person,
+                                size: 80,
+                                color: Colors.green[100],
+                              ),
+                            ),
+                            Container(
+                                padding: const EdgeInsets.only(left: 10),
+                                child: Expanded(
+                                  child: Column(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        snapshot.data!.name ?? "-",
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.aBeeZee(
+                                          fontSize: 23,
+                                          color: Colors.white,
                                         ),
-                                        Text(
-                                          snapshot.data!.phone ?? "-",
-                                          style: GoogleFonts.aBeeZee(
-                                            fontSize: 18,
-                                            color: Colors.grey[350],
-                                          ),
+                                      ),
+                                      Text(
+                                        snapshot.data!.phone ?? "-",
+                                        style: GoogleFonts.aBeeZee(
+                                          fontSize: 18,
+                                          color: Colors.grey[350],
                                         ),
-                                        Text(
-                                          snapshot.data!.email ?? "-",
-                                          style: GoogleFonts.aBeeZee(
-                                            fontSize: 15,
-                                            color: Colors.grey[350],
-                                          ),
+                                      ),
+                                      Text(
+                                        snapshot.data!.email ?? "-",
+                                        style: GoogleFonts.aBeeZee(
+                                          fontSize: 15,
+                                          color: Colors.grey[350],
                                         ),
-                                      ],
-                                    ),
-                                  )),
-                            ],
-                          );
-                        }
+                                      ),
+                                    ],
+                                  ),
+                                )),
+                          ],
+                        );
+                      }
 
-                        return const CircularProgressIndicator();
-                      },
-                    )),
-                Expanded(
-                    child: FutureBuilder<User>(
-                  future: futureProfile,
-                  builder: (context, snapshot) {
-                    if (snapshot.hasData) {
-                      List<Contacts> contacts = snapshot.data!.contacts ?? [];
+                      return const Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    },
+                  )),
+              Expanded(
+                child: Container(
+                  child: FutureBuilder<User>(
+                    future: futureProfile,
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData) {
+                        List<Contacts> contacts = snapshot.data!.contacts ?? [];
 
-                      return ListView.builder(
-                        itemCount: contacts.length,
-                        itemBuilder: (context, index) {
-                          return SizedBox(
-                            height: 70,
-                            child: ElevatedButton(
+                        return ListView.builder(
+                          itemCount: contacts.length,
+                          itemBuilder: (context, index) {
+                            return SizedBox(
+                              height: 70,
+                              child: ElevatedButton(
                                 style: ElevatedButton.styleFrom(
                                     primary: Colors.white),
                                 onPressed: () => {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => ContactDetail(
-                                            id: contacts[index].id ?? "",
-                                          ),
-                                        ),
-                                      )
-                                    },
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ContactDetail(
+                                        id: contacts[index].id ?? "",
+                                      ),
+                                    ),
+                                  ).then(onGoBack)
+                                },
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.start,
                                   children: [
@@ -263,32 +346,26 @@ class _State extends State<HomePage> {
                                           color: Colors.black87, fontSize: 18),
                                     )
                                   ],
-                                )),
-                          );
-                        },
-                      );
-                    } else if (snapshot.hasError) {
-                      return Text("${snapshot.error}");
-                    }
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      } else if (snapshot.hasError) {
+                        return Text("${snapshot.error}");
+                      }
 
-                    return const CircularProgressIndicator();
-                  },
-                )),
-                Container(
-                  padding: const EdgeInsets.only(bottom: 15, right: 15),
-                  alignment: Alignment.bottomRight,
-                  child: FloatingActionButton(
-                    backgroundColor: Color(0xff6bac4c),
-                    onPressed: () => {showAddPanel(context)},
-                    child: const Icon(
-                      Icons.add_rounded,
-                      size: 50,
-                    ),
+                      return const Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    },
                   ),
-                )
-              ],
-            ),
+                ),
+              ),
+            ],
           ),
-        ));
+        ),
+      ),
+    );
   }
 }

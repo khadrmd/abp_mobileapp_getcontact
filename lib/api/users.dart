@@ -39,7 +39,7 @@ class UserService {
       ),
     );
 
-    if (response.statusCode == 200) {
+    if (response.statusCode == 201) {
       return "Registered";
     } else {
       return Future.error("Phone/Email is already taken");

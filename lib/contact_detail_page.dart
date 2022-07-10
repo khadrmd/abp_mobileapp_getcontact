@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:get_contact/api/contact.dart';
 import 'package:get_contact/api/utils/get_initials.dart';
+import 'package:get_contact/home_page.dart';
 import 'package:get_contact/models/detail_contact.dart';
 import 'package:new_gradient_app_bar/new_gradient_app_bar.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -17,12 +18,64 @@ class ContactDetail extends StatefulWidget {
 }
 
 class _State extends State<ContactDetail> {
-  late Future<DetailContact> futureDetailContact;
+  late Future<DetailContact> futureDetailContact = [] as Future<DetailContact>;
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    futureDetailContact = ContactService.getProfile(widget.id);
+    fetchContactProfile();
+  }
+
+  String? _validateName(String? txt) {
+    if (txt == null || txt.isEmpty) {
+      return "Name is required";
+    }
+    return null;
+  }
+
+  String? _validatePhone(String? txt) {
+    if (txt == null || txt.isEmpty) {
+      return "Phone is required";
+    }
+    if (!RegExp(r"^(^08)(\d{3,4}-?){2}\d{3,4}$").hasMatch(txt)) {
+      return "Not a valid phone number";
+    }
+    return null;
+  }
+
+  fetchContactProfile() {
+    setState(() {
+      futureDetailContact = ContactService.getProfile(widget.id);
+    });
+    futureDetailContact.then(
+      (value) => {
+        setState(() {
+          _nameController.text = value.data!.user!.data!.name ?? "";
+          _phoneController.text = value.data!.user!.data!.phone ?? "";
+        })
+      },
+    );
+  }
+
+  deleteContact() async {
+    try {
+      Navigator.pop(context);
+      await ContactService.deleteContact(widget.id);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Deleted')),
+      );
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const HomePage(),
+        ),
+        (route) => false,
+      );
+    } catch (e) {
+      log(e.toString());
+    }
   }
 
   showAlertDialog(BuildContext context) {
@@ -35,7 +88,7 @@ class _State extends State<ContactDetail> {
     Widget continueButton = OutlinedButton(
       child: const Text("Confirm"),
       onPressed: () {
-        Navigator.popUntil(context, (route) => route.isFirst);
+        deleteContact();
       },
     );
     AlertDialog alert = AlertDialog(
@@ -56,31 +109,43 @@ class _State extends State<ContactDetail> {
   }
 
   showEditPanel(BuildContext context) {
-    Widget nameField = TextField(
+    Widget nameField = TextFormField(
+      controller: _nameController,
+      validator: _validateName,
       style: GoogleFonts.aBeeZee(fontSize: 20),
       decoration: const InputDecoration(
-          filled: true,
-          focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Color(0xff22824b))),
-          fillColor: Colors.white,
-          hintText: "Name",
-          border: OutlineInputBorder(
-            borderSide: BorderSide(color: Color(0xff22824b)),
-          )),
+        filled: true,
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(
+            color: Color(0xff22824b),
+          ),
+        ),
+        fillColor: Colors.white,
+        hintText: "Name",
+        border: OutlineInputBorder(
+          borderSide: BorderSide(
+            color: Color(0xff22824b),
+          ),
+        ),
+      ),
     );
 
-    Widget phoneField = TextField(
+    Widget phoneField = TextFormField(
+      controller: _phoneController,
+      validator: _validatePhone,
       keyboardType: TextInputType.phone,
       style: GoogleFonts.aBeeZee(fontSize: 20),
       decoration: const InputDecoration(
-          filled: true,
-          focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Color(0xff22824b))),
-          fillColor: Colors.white,
-          hintText: "Phone Number",
-          border: OutlineInputBorder(
-            borderSide: BorderSide(color: Color(0xff22824b)),
-          )),
+        filled: true,
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: Color(0xff22824b)),
+        ),
+        fillColor: Colors.white,
+        hintText: "Phone Number",
+        border: OutlineInputBorder(
+          borderSide: BorderSide(color: Color(0xff22824b)),
+        ),
+      ),
     );
 
     Widget cancelButton = OutlinedButton(
@@ -90,8 +155,11 @@ class _State extends State<ContactDetail> {
       },
     );
     Widget saveButton = OutlinedButton(
-      child: Text("Save"),
-      onPressed: () {
+      child: const Text("Save"),
+      onPressed: () async {
+        ContactService.update(
+            widget.id, _nameController.text, _phoneController.text);
+        await fetchContactProfile();
         Navigator.pop(context);
       },
     );
@@ -134,7 +202,11 @@ class _State extends State<ContactDetail> {
           style: GoogleFonts.righteous(fontSize: 27),
         ),
         gradient: const LinearGradient(
-            colors: [Color(0xff22824b), Color(0xff6bac4c)]),
+          colors: [
+            Color(0xff22824b),
+            Color(0xff6bac4c),
+          ],
+        ),
       ),
       body: Center(
         child: Align(
@@ -145,7 +217,10 @@ class _State extends State<ContactDetail> {
                   gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [Color(0xff6bac4c), Color(0xff22824b)]),
+                      colors: [
+                        Color(0xff6bac4c),
+                        Color(0xff22824b),
+                      ]),
                 ),
                 padding: const EdgeInsets.all(10),
                 height: 80,
@@ -165,10 +240,12 @@ class _State extends State<ContactDetail> {
                               backgroundColor: Color(0xff22824b),
                               child: Text(
                                 getInitials(
-                                    snapshots.data!.data!.user!.data!.name ??
-                                        ""),
+                                  snapshots.data!.data!.user!.data!.name ?? "",
+                                ),
                                 style: GoogleFonts.aBeeZee(
-                                    fontSize: 18, color: Colors.white),
+                                  fontSize: 18,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
                           ),
@@ -244,7 +321,9 @@ class _State extends State<ContactDetail> {
                         ),
                       );
                     }
-                    return const CircularProgressIndicator();
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
                   },
                 ),
               ),
